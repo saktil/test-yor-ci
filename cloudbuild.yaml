@@ -10,22 +10,49 @@ steps:
     
         yor tag -d . --output cli --output-json-file hasil.json
 
+- name: gcr.io/cloud-builders/gcloud
+  entrypoint: 'bash'
+  args: [ '-c', 'gcloud secrets versions access latest --secret=github-ssh-key > /root/.ssh/id_github' ]
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
+
+- name: 'gcr.io/cloud-builders/git'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    chmod 600 /root/.ssh/id_github
+    cat <<EOF >/root/.ssh/config
+    Hostname github.com
+    IdentityFile /root/.ssh/id_github
+    EOF
+    ssh-keyscan -t rsa github.com > /root/.ssh/known_hosts
+  volumes:
+  - name: 'ssh'
+    path: /root/.ssh
+
+- name: gcr.io/cloud-builders/git
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+        git init
+
         git config user.name "saktil"
 
         git config user.email "leosaragih001@gmail.com"
 
-        git init
-
-        git add .
-
-        git commit -m "update from ci"
-
         git remote add origin https://github.com/saktil/test-yor-ci.git
 
-        git branch -M master
+        git checkout -b master
 
-        git push -u origin master
+        git fetch
         
-      
-     
-      
+        git checkout master
+
+        git pull
+        
+        git push -u origin master 
+        
+
